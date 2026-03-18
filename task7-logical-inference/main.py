@@ -5,7 +5,7 @@
 def backchain_tree(clause):
     #opus is a penguin
 
-    # works recursively on lists of any nested depth (i think)
+    # works recursively on lists of any nested depth
     if isinstance(clause, list):
         # list check, if yes then call recursively on separate items
         new_list = []
@@ -35,6 +35,7 @@ def backchain_tree(clause):
         return clause            
 
 def entails(goal, entity, seen=None):
+    # avoids cycles by returning upon seeing duplicate statement
     if seen is None:
         seen = set()
     key = (goal, entity)
@@ -42,14 +43,17 @@ def entails(goal, entity, seen=None):
         return False
     seen.add(key)
 
+    # grabs facts pertaining to entity
     facts = kb(entity)
     if facts is not None and goal in facts:
         return True
 
+    # grabs rules for goal
     rule_reqs = kb(goal)
     if rule_reqs is None:
         return False
 
+    # checks for nesting and recursively checks requirements for goal
     has_nested = any(isinstance(item, list) for item in rule_reqs)
     if has_nested:
         for item in rule_reqs:
