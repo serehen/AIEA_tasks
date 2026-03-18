@@ -6,23 +6,27 @@ def backchain_tree(clause):
     #opus is a penguin
 
     # works recursively on lists of any nested depth (i think)
-    if type(clause) == list:
+    if isinstance(clause, list):
         # list check, if yes then call recursively on separate items
         new_list = []
         for item in clause:
             new = backchain_tree(item)
             new_list.append(new)
         # new_list.insert(0, clause)
-        return new_list
+        return [new_list]
 
     # checks kb to see if 
     requirements = kb(clause)
 
     if requirements is not None:
         reqlist = []
-        for item in requirements:
+        for i, item in enumerate(requirements):
             new = backchain_tree(item)
-            reqlist.append(new)
+            if isinstance(new, list):
+                for j, new_item in enumerate(new):
+                    reqlist.insert(i+j, new_item)
+            else:
+                reqlist.append(new)
         chain = [clause]
         chain.append(reqlist)
         return chain
@@ -30,29 +34,61 @@ def backchain_tree(clause):
         # no further requirements in kb 
         return clause            
 
-def backchain_solve(clause, X):
-    # determining whether clause applies to entity X
-
-    data = kb(X)
-
-    if data == None:
+def entails(goal, entity, seen=None):
+    if seen is None:
+        seen = set()
+    key = (goal, entity)
+    if key in seen:
         return False
-    
-    requirements = backchain_tree(clause)
-    for item in data:
-        if item in requirements:
-            
+    seen.add(key)
 
+    facts = kb(entity)
+    if facts is not None and goal in facts:
+        return True
 
+    rule_reqs = kb(goal)
+    if rule_reqs is None:
+        return False
+
+    has_nested = any(isinstance(item, list) for item in rule_reqs)
+    if has_nested:
+        for item in rule_reqs:
+            if isinstance(item, list):
+                if all(entails(sub, entity, seen.copy()) for sub in item):
+                    return True
+            else:
+                if entails(item, entity, seen.copy()):
+                    return True
+        return False
+    else:
+        return all(entails(item, entity, seen.copy()) for item in rule_reqs)
+
+# def backchain_parser(tree):
+#     parsed = []
+#     for i, item in enumerate(tree):
+#         if isinstance(item, list):
+#             if i > 0:
+#                 parsed.append('or')
+#             parse = backchain_parser(item)
+#             parsed.append(parse)
+#         elif i > 0:
+#             parsed.append('and')
+#             parsed.append(item)
+#         else:
+#             parsed.append(item)
+#     return parsed
+        
 
 def kb(x):
     if x == 'tim':
         return ['feathers', 'flies']
     elif x == 'bird':
-        return [['feathers'], ['flies', 'lays eggs']]
+        return ['feathers', ['flies', 'lays eggs']]
     elif x == 'penguin':
         return ['bird', 'no flight', 'swims', 'black and white']
     else:
         return None
 
-print(backchain_tree('penguin'))
+# print(backchain_tree('penguin'))
+# print(backchain_parser(backchain_tree('penguin')))
+print(entails('penguin', 'tim'))
