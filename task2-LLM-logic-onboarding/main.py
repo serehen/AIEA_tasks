@@ -21,7 +21,6 @@ def split_kb_and_queries(text):
     queries = extract_queries(text[match.start():])
     return kb, queries
 
-
 response = client.responses.create(
     model="gpt-5.4",
     reasoning={"effort": "low"},
