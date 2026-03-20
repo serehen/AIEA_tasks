@@ -22,62 +22,65 @@ def split_kb_and_queries(text):
     query = queries[0] if queries else ""
     return kb, query
 
+def response_check(kb, query):
+    try:
+        janus.consult("dummy.pl", str(kb))
+        try:
+            res = janus.query_once(str(query))
+            if res['truth']:
+                results['T'] += 1
+            else:
+                results['F'] += 1
+            janus.query_once('unload_file("dummy.pl").')
+        except:
+            results['E'] += 1
+    except Exception:
+        results['E'] += 1
+
 kb_q_list = []
 results = {'T': 0, 'F': 0, 'E': 0}
 
-for i in range(1):
+for i in range(3):
     response = client.responses.create(
         model="gpt-5.4",
-        reasoning={"effort": "low"},
-        instructions="You will be given a prompt in English. \
-                You will use information given to you by the prompt, and convert the prompt into a \
-                Prolog knowledge base. Then you must provide a query based on the last provided sentence for the KB. \
-                The response must only contain the resulting knowledge base and query, and contain nothing \
-                that is not a character such as a null terminator. Ensure that all KB data is contiguous. \
-                Ensure that the query you produce is logically arrivable via the statements in the KB. \
-                Ensure that your code respects all syntax and logic rules that are required for a Prolog program.",
-        input="All rectangles have four sides. All four-sided things are shapes. Are all rectangles shapes?."
+        reasoning={"effort": "none"},
+        instructions="Role: You are a Logic Programming Expert specializing in ISO-standard Prolog. \
+                    Task: Convert given natural language statements into a Prolog Knowledge Base and final questionm into a Prolog query.\
+                    Syntax rules you must follow:\
+                    1. All entities must be lowercase (Name = name)\
+                    2. All variables must be uppercased (X ,Y)\
+                    3. All predicates must be snake cased (is_a(X, Y)\
+                    4. Every fact and rule must end with a '.'\
+                    5. Map 'If' or 'Every' statements to Prolog rules (a(X) :- b(X)\
+                    Logical mapping convention you must follow:\
+                    1. All statements are either Facts or Rules(a(X) or a(X) :- b(X))\
+                    2. All facts used in rules must be declared(b(X) :- a(X) needs a(X) and b(X) declared as facts)\
+                    3. All questions are queries(?- a(X))\
+                    4. All rules or facts used must exist within the knowledge base\
+                    5. All Prolog code must be contiguous(i.e. must be grouped together)\
+                    After the code generation, return and ensure that the code follows all syntax and logical rules\
+                    previously mentioned, and correct any errors before providing final Prolog output Additionally,\
+                    ensure your response contains nothing more but the Prolog code alone.", 
+        input="Homer, Bart, and Abe are male, while Marge, Lisa, Maggie, and Mona are female; Homer and Marge\
+             are the parents of Bart, Lisa, and Maggie, while Abe and Mona are the parents of Homer. Is Abe Bart's grandparent?"
     )
     kb, query = split_kb_and_queries(response.output_text)
     kb_q_list.append((kb, query))
-    # print(query)
-    # print(kb)
-    print(response.output_text, i)
+
 if not kb_q_list:
-    results['E'] += 1
-    print("error no kbqlist")
-print(kb_q_list, "list of stuff")
+    print('E')
+
 for kb, query in kb_q_list:
-    print(query, "q")
-    print(kb, "kb")
-    try:
-        janus.consult("dummy.pl", kb)
-        print("kb load success")
-    except Exception:
-        results['E'] += 1
-        print("error kb")
-        continue
-
-    if not query:
-        results['E'] += 1
-        print("error no query")
-        continue
-
-    try:
-        # if isinstance(query, list):
-            # query = query[0]
-        res = janus.query_once(query)
-        if res['truth']:
-            results['T'] += 1
-            print("truth")
-        else:
-            results['F'] += 1
-            print("false")
-        # print(query)
-        # print(janus.query_once(query))
-    except:
-        results['E'] += 1
-        print("error query")
-
+    response_check(kb,query)
+    # print(kb, 'kb')
+    # print(query, 'query')
+    # print(response_check(kb, query))
 consensus = max(results, key=results.get)
 print(consensus)
+try:
+    janus.query_once("unload_file('dummy.pl')")
+except:
+    pass
+janus.consult('simpson.pl')
+for kb, query in kb_q_list:
+    print(janus.query_once(str(query)))
