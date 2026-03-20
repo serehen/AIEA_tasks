@@ -30,7 +30,6 @@ all_splits = text_splitter.split_documents(docs)
 doc_id = vector_store.add_documents(documents=all_splits)
 
 def extract_query_text(message_obj) -> str:
-    """Handle both LangChain message objects and plain dict message payloads."""
     if hasattr(message_obj, "text") and message_obj.text:
         return str(message_obj.text)
 
