@@ -299,16 +299,11 @@ def run(user_query: str = DEFAULT_USER_QUERY, retrieval_query: str = DEFAULT_RET
     return run_workflow(initial_state)
 
 
-def main():
-    final_state = run()
+final_state = run()
 
-    if final_state.get("error"):
-        print(f"Agent call failed: {final_state['error']}")
-        return
+if final_state.get("error"):
+    print(f"Agent call failed: {final_state['error']}")
+    pass
 
-    print(final_state["inference_tree"])
-    print("TRUE" if final_state["truth_value"] else "FALSE")
-
-
-if __name__ == "__main__":
-    main()
+print(final_state["inference_tree"])
+print("TRUE" if final_state["truth_value"] else "FALSE")
